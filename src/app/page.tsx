@@ -5,12 +5,24 @@ import { fetchWeather } from "./slices/weatherSlice";
 import { fetchCrypto, startCryptoWebSocket } from "./slices/cryptoSlice";
 import { useEffect } from "react";
 import { fetchNews } from "./slices/newsSlice";
+import { RootState, AppDispatch } from "./store";
 
 export default function Home() {
-  const dispatch = useDispatch();
-  const weather = useSelector((state) => state.weather.data);
-  const crypto = useSelector((state) => state.crypto.data);
-  const news = useSelector((state) => state.news.articles);
+  const dispatch = useDispatch<AppDispatch>();
+
+  // Ensure proper typing
+  const weather = useSelector(
+    (state: RootState) =>
+      state.weather.data as Record<string, { main?: { temp: number } }>
+  );
+  const crypto = useSelector(
+    (state: RootState) =>
+      state.crypto.data as Record<
+        string,
+        { usd: number; usd_24h_change?: number }
+      >
+  );
+  const news = useSelector((state: RootState) => state.news.articles);
 
   useEffect(() => {
     dispatch(fetchWeather("New York"));
@@ -58,7 +70,7 @@ export default function Home() {
               <p className="text-gray-700">💲 {crypto[coin]?.usd}</p>
               <p
                 className={`text-sm font-medium ${
-                  crypto[coin]?.usd_24h_change >= 0
+                  crypto[coin]?.usd_24h_change! >= 0
                     ? "text-green-600"
                     : "text-red-600"
                 }`}
@@ -76,14 +88,18 @@ export default function Home() {
         <ul className="mt-4 space-y-3">
           {news.map((article, index) => (
             <li key={index} className="border-b border-gray-300 pb-2">
-              <a
-                href={article.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:text-blue-800 font-medium transition duration-300"
-              >
-                {article.title}
-              </a>
+              {typeof article.title === "string" ? ( // Ensure it's a string
+                <a
+                  href={article.link} // Use the correct field name
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 font-medium transition duration-300"
+                >
+                  {article.title}
+                </a>
+              ) : (
+                <p className="text-red-600">Invalid title</p>
+              )}
             </li>
           ))}
         </ul>
