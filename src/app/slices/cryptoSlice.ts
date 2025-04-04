@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import axios from "axios";
 import { io } from "socket.io-client";
+import type { NextApiRequest, NextApiResponse } from "next";
 
 // Define state structure
 interface CryptoState {
@@ -66,14 +67,18 @@ export const { updateCryptoPrices } = cryptoSlice.actions;
 // Start WebSocket connection for real-time crypto updates
 export const startCryptoWebSocket = (dispatch: any) => {
   if (typeof window !== "undefined") {
-    const socket = io(
+    const socket = new WebSocket(
       "wss://ws.coincap.io/prices?assets=bitcoin,ethereum,cardano"
     );
 
-    socket.on("message", (message) => {
-      const data: Record<string, number> = JSON.parse(message);
+    socket.onmessage = (event) => {
+      const data: Record<string, number> = JSON.parse(event.data);
       dispatch(updateCryptoPrices(data));
-    });
+    };
+
+    socket.onerror = (error) => {
+      console.error("WebSocket Error:", error);
+    };
 
     return () => socket.close(); // Cleanup on unmount
   }
